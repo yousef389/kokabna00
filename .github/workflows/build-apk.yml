@@ -25,19 +25,14 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Fix gradle-wrapper.jar
+      - name: Regenerate Gradle wrapper (fix jar)   # ← التعديل هنا
         run: |
-          JAR_SRC="$FLUTTER_ROOT/packages/flutter_tools/templates/app_shared/android.tmpl/gradle/wrapper/gradle-wrapper.jar"
-          if [ -f "$JAR_SRC" ]; then
-            cp "$JAR_SRC" android/gradle/wrapper/gradle-wrapper.jar
-          else
-            JAR_SRC=$(find $FLUTTER_ROOT -name "gradle-wrapper.jar" | head -1)
-            cp "$JAR_SRC" android/gradle/wrapper/gradle-wrapper.jar
-          fi
-          echo "gradle-wrapper.jar: $(ls -lh android/gradle/wrapper/gradle-wrapper.jar)"
-
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
+          sudo apt-get install -y gradle -q
+          cd android
+          gradle wrapper --gradle-version=8.4 --distribution-type=all
+          chmod +x gradlew
+          echo "gradle-wrapper.jar: $(ls -lh gradle/wrapper/gradle-wrapper.jar)"
+          echo "gradlew size: $(wc -c < gradlew)"
 
       - name: Verify google-services.json
         run: |
