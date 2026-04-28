@@ -29,7 +29,17 @@ jobs:
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
-          chmod +x android/gradlew
+
+      - name: Fix gradle-wrapper.jar (generate in clean temp dir)
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp/
+          mkdir -p /tmp/gradle-init
+          cd /tmp/gradle-init
+          /tmp/gradle-8.7/bin/gradle wrapper --gradle-version=8.7 --distribution-type=all
+          cp gradle/wrapper/gradle-wrapper.jar $GITHUB_WORKSPACE/android/gradle/wrapper/gradle-wrapper.jar
+          chmod +x $GITHUB_WORKSPACE/android/gradlew
+          echo "✓ gradle-wrapper.jar size: $(wc -c < $GITHUB_WORKSPACE/android/gradle/wrapper/gradle-wrapper.jar) bytes"
 
       - name: Verify google-services.json
         run: |
