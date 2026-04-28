@@ -25,11 +25,12 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Regenerate Gradle wrapper
+      - name: Regenerate Gradle wrapper (Gradle 8.4 مباشرة)
         run: |
-          sudo apt-get install -y gradle -q
+          wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp/
           cd android
-          gradle wrapper --gradle-version=8.4 --distribution-type=all
+          /tmp/gradle-8.4/bin/gradle wrapper --gradle-version=8.4 --distribution-type=all
           chmod +x gradlew
 
       - name: Verify google-services.json
