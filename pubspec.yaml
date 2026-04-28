@@ -12,7 +12,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  # Firebase — يجب أن تكون متوافقة مع بعض
+  # Firebase
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
   cloud_firestore: ^5.4.4
@@ -33,7 +33,7 @@ dependencies:
   path: ^1.9.1
   mime: ^2.0.0
   # Audio / Video
-  record: ^5.1.2
+  record: ^6.0.0
   just_audio: ^0.9.40
   video_player: ^2.9.2
   # System
