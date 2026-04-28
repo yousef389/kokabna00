@@ -115,7 +115,7 @@ class PageService {
         .replaceAll(RegExp(r'<iframe[\s\S]*?</iframe>', caseSensitive: false), '')
         .replaceAll(RegExp(r'<object[\s\S]*?</object>', caseSensitive: false), '')
         .replaceAll(RegExp(r'<embed[\s\S]*?</embed>', caseSensitive: false), '')
-        .replaceAll(RegExp(r"<meta[^>]+http-equiv=[\"\']refresh[\"\'][^>]*>", caseSensitive: false), '');
+        .replaceAll(RegExp(r'<meta[^>]+http-equiv=["\']refresh["\'][^>]*>', caseSensitive: false), '');
   }
 
   String _safeShell(String body) {
