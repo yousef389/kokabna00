@@ -134,7 +134,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: TextField(
                   controller: text,
                   minLines: 1, maxLines: 5,
-                  textDirection: TextDirection.rtl,
+                  textDirection: TextDirection."(rtl"),
                   decoration: const InputDecoration(hintText: 'اكتب رسالتك... ❤️'),
                   onSubmitted: (_) => send(),
                 ),
