@@ -25,6 +25,11 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.9'
+
       - name: Create local.properties
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
@@ -60,10 +65,14 @@ jobs:
           include ":app"
           EOF
 
-      - name: Fix Gradle Wrapper
+      - name: Replace gradlew with system Gradle
         run: |
-          mkdir -p android/gradle/wrapper
-          cat > android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          # إنشاء gradle-wrapper.jar حقيقي عن طريق gradle نفسه
+          cd android
+          
+          # إنشاء wrapper properties أولاً
+          mkdir -p gradle/wrapper
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.9-all.zip
@@ -72,10 +81,14 @@ jobs:
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
-          wget -q "https://github.com/gradle/gradle/raw/v8.9.0/gradle/wrapper/gradle-wrapper.jar" \
-            -O android/gradle/wrapper/gradle-wrapper.jar
-          chmod +x android/gradlew
-          echo "✓ Gradle wrapper ready"
+
+          # استخدام gradle المثبت من setup-gradle لإنشاء الـ wrapper
+          gradle wrapper --gradle-version=8.9
+          
+          chmod +x gradlew
+          
+          echo "✓ gradle-wrapper.jar size: $(du -sh gradle/wrapper/gradle-wrapper.jar)"
+          cd ..
 
       - name: Fix page_service.dart
         run: |
