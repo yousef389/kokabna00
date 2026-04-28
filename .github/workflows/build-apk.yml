@@ -35,13 +35,6 @@ jobs:
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
 
-      - name: Show current gradle files
-        run: |
-          echo "=== app/build.gradle ==="
-          cat android/app/build.gradle
-          echo "=== settings.gradle ==="
-          cat android/settings.gradle
-
       - name: Fix settings.gradle
         run: |
           cat > android/settings.gradle << 'EOF'
@@ -88,25 +81,7 @@ jobs:
           EOF
           gradle wrapper --gradle-version=8.9
           chmod +x gradlew
-          echo "✓ JAR size: $(du -sh gradle/wrapper/gradle-wrapper.jar)"
           cd ..
-
-      - name: Fix page_service.dart
-        run: |
-          python3 - << 'PYEOF'
-          path = 'lib/services/page_service.dart'
-          try:
-              with open(path, 'r') as f:
-                  lines = f.readlines()
-              for i, line in enumerate(lines):
-                  if 'http-equiv' in line and 'replaceAll' in line:
-                      lines[i] = "        .replaceAll(RegExp(r'<meta[^>]+http-equiv=[\"\\']refresh[\"\\'][^>]*>', caseSensitive: false), '');\n"
-                      print(f'Fixed line {i+1}')
-              with open(path, 'w') as f:
-                  f.writelines(lines)
-          except FileNotFoundError:
-              print(f'File not found: {path}, skipping')
-          PYEOF
 
       - name: Verify google-services.json
         run: |
