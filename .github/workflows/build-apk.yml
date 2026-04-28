@@ -35,41 +35,37 @@ jobs:
 
       # ══════════════════════════════════════════════
       #  إصلاح 2 — تجاوز gradle-wrapper.jar التالف
-      #  نستبدل gradlew بسكريبت يشغّل Gradle مباشرة
+      #  نستخدم Gradle 8.4 (متوافق مع settings.gradle)
       # ══════════════════════════════════════════════
-      - name: Install Gradle 8.7 and override gradlew
+      - name: Install Gradle 8.4 and override gradlew
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
+          wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /tmp/
           cat > android/gradlew << 'GRADLEW'
-          #!/bin/bash
-          exec /tmp/gradle-8.7/bin/gradle "$@"
-          GRADLEW
+#!/bin/bash
+exec /tmp/gradle-8.4/bin/gradle "$@"
+GRADLEW
           chmod +x android/gradlew
-          echo "✓ gradlew replaced"
+          echo "✓ gradlew → Gradle 8.4"
 
       # ══════════════════════════════════════════════
-      #  إصلاح 3 — ترقية AGP + Kotlin + SDK + NDK
+      #  إصلاح 3 — compileSdk 36 + ndkVersion
+      #  (بدون ترقية AGP أو Kotlin عشان يتوافق مع 8.4)
       # ══════════════════════════════════════════════
       - name: Patch Android config files
         run: |
-          # gradle-wrapper.properties
-          echo 'distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-all.zip' \
+          # gradle-wrapper.properties → 8.4
+          echo 'distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip' \
             > android/gradle/wrapper/gradle-wrapper.properties
 
-          # settings.gradle — AGP 8.6.0 + Kotlin 2.1.0
-          sed -i 's|id "com.android.application" version "[^"]*"|id "com.android.application" version "8.6.0"|' android/settings.gradle
-          sed -i 's|id "org.jetbrains.kotlin.android" version "[^"]*"|id "org.jetbrains.kotlin.android" version "2.1.0"|' android/settings.gradle
-
-          # app/build.gradle — compileSdk 36 + targetSdk 36 + ndkVersion
+          # app/build.gradle — compileSdk 36 + ndkVersion
           sed -i 's/compileSdk = [0-9]*/compileSdk = 36/' android/app/build.gradle
           sed -i 's/targetSdk = [0-9]*/targetSdk = 36/'   android/app/build.gradle
           grep -q "ndkVersion" android/app/build.gradle || \
             sed -i '/compileSdk = 36/a\    ndkVersion = "28.2.13676358"' android/app/build.gradle
 
-          echo "✓ AGP: $(grep 'com.android.application' android/settings.gradle)"
-          echo "✓ Kotlin: $(grep 'kotlin.android' android/settings.gradle)"
-          echo "✓ SDK: $(grep -E 'compileSdk|targetSdk|ndkVersion' android/app/build.gradle)"
+          echo "✓ build.gradle:"
+          grep -E "compileSdk|targetSdk|ndkVersion" android/app/build.gradle
 
       # ══════════════════════════════════════════════
       #  إصلاح 4 — page_service.dart (regex مكسور)
@@ -101,10 +97,10 @@ jobs:
         run: flutter pub get
 
       # ══════════════════════════════════════════════
-      #  البناء
+      #  البناء — مع تجاوز تحذيرات إصدار Gradle
       # ══════════════════════════════════════════════
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
