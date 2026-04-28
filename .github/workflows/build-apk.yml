@@ -32,10 +32,10 @@ jobs:
 
       - name: Regenerate Gradle wrapper
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O /tmp/gradle.zip
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /tmp/
           cd android
-          /tmp/gradle-8.4/bin/gradle wrapper --gradle-version=8.4 --distribution-type=all
+          /tmp/gradle-8.7/bin/gradle wrapper --gradle-version=8.7 --distribution-type=all
           chmod +x gradlew
 
       - name: Verify google-services.json
