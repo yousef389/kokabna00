@@ -29,14 +29,7 @@ jobs:
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
-
-      - name: Regenerate Gradle wrapper
-        run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /tmp/
-          cd android
-          /tmp/gradle-8.7/bin/gradle wrapper --gradle-version=8.7 --distribution-type=all
-          chmod +x gradlew
+          chmod +x android/gradlew
 
       - name: Verify google-services.json
         run: |
