@@ -25,7 +25,12 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Regenerate Gradle wrapper (Gradle 8.4 مباشرة)
+      - name: Create local.properties
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
+
+      - name: Regenerate Gradle wrapper
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /tmp/
