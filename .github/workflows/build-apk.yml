@@ -30,6 +30,16 @@ jobs:
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
 
+      # ✅ الحل الرئيسي - إعادة توليد gradle wrapper
+      - name: Fix Gradle Wrapper
+        run: |
+          cd android
+          gradle wrapper --gradle-version=8.4
+          cd ..
+
+      - name: Grant gradlew permission
+        run: chmod +x android/gradlew
+
       - name: Fix page_service.dart regex
         run: |
           python3 - << 'PYEOF'
@@ -50,9 +60,9 @@ jobs:
       - name: Verify google-services.json
         run: |
           if [ -f "android/app/google-services.json" ]; then
-            echo "google-services.json found"
+            echo "✓ google-services.json found"
           else
-            echo "google-services.json MISSING"
+            echo "✗ google-services.json MISSING"
             exit 1
           fi
 
