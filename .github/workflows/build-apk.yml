@@ -25,82 +25,44 @@ jobs:
           channel: stable
           cache: true
 
-      # ══════════════════════════════════════════════
-      #  إصلاح 1 — local.properties
-      # ══════════════════════════════════════════════
       - name: Create local.properties
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
-          echo "sdk.dir=$ANDROID_HOME"    >> android/local.properties
+          echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
 
-      # ══════════════════════════════════════════════
-      #  إصلاح 2 — تجاوز gradle-wrapper.jar التالف
-      #  نستخدم Gradle 8.4 (متوافق مع settings.gradle)
-      # ══════════════════════════════════════════════
-      - name: Install Gradle 8.4 and override gradlew
-        run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /tmp/
-          cat > android/gradlew << 'GRADLEW'
-#!/bin/bash
-exec /tmp/gradle-8.4/bin/gradle "$@"
-GRADLEW
-          chmod +x android/gradlew
-          echo "✓ gradlew → Gradle 8.4"
-
-      # ══════════════════════════════════════════════
-      #  إصلاح 3 — compileSdk 36 + ndkVersion
-      #  (بدون ترقية AGP أو Kotlin عشان يتوافق مع 8.4)
-      # ══════════════════════════════════════════════
-      - name: Patch Android config files
-        run: |
-          # gradle-wrapper.properties → 8.4
-          echo 'distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip' \
-            > android/gradle/wrapper/gradle-wrapper.properties
-
-          # app/build.gradle — compileSdk 36 + ndkVersion
-          sed -i 's/compileSdk = [0-9]*/compileSdk = 36/' android/app/build.gradle
-          sed -i 's/targetSdk = [0-9]*/targetSdk = 36/'   android/app/build.gradle
-          grep -q "ndkVersion" android/app/build.gradle || \
-            sed -i '/compileSdk = 36/a\    ndkVersion = "28.2.13676358"' android/app/build.gradle
-
-          echo "✓ build.gradle:"
-          grep -E "compileSdk|targetSdk|ndkVersion" android/app/build.gradle
-
-      # ══════════════════════════════════════════════
-      #  إصلاح 4 — page_service.dart (regex مكسور)
-      # ══════════════════════════════════════════════
       - name: Fix page_service.dart regex
         run: |
           python3 - << 'PYEOF'
           path = 'lib/services/page_service.dart'
-          with open(path, 'r') as f:
-              lines = f.readlines()
-          for i, line in enumerate(lines):
-              if 'http-equiv' in line and 'replaceAll' in line:
-                  lines[i] = "        .replaceAll(RegExp(r'<meta[^>]+http-equiv=[\"\\']refresh[\"\\'][^>]*>', caseSensitive: false), '');\n"
-                  print(f'✓ Fixed line {i+1}')
-          with open(path, 'w') as f:
-              f.writelines(lines)
+          try:
+              with open(path, 'r') as f:
+                  lines = f.readlines()
+              for i, line in enumerate(lines):
+                  if 'http-equiv' in line and 'replaceAll' in line:
+                      lines[i] = "        .replaceAll(RegExp(r'<meta[^>]+http-equiv=[\"\\']refresh[\"\\'][^>]*>', caseSensitive: false), '');\n"
+                      print(f'Fixed line {i+1}')
+              with open(path, 'w') as f:
+                  f.writelines(lines)
+          except FileNotFoundError:
+              print(f'File not found: {path}, skipping')
           PYEOF
 
-      # ══════════════════════════════════════════════
-      #  التحقق
-      # ══════════════════════════════════════════════
       - name: Verify google-services.json
         run: |
-          [ -f "android/app/google-services.json" ] \
-            && echo "✓ google-services.json موجود" \
-            || (echo "✗ google-services.json مفقود" && exit 1)
+          if [ -f "android/app/google-services.json" ]; then
+            echo "google-services.json found"
+          else
+            echo "google-services.json MISSING"
+            exit 1
+          fi
 
       - name: Install dependencies
         run: flutter pub get
 
-      # ══════════════════════════════════════════════
-      #  البناء — مع تجاوز تحذيرات إصدار Gradle
-      # ══════════════════════════════════════════════
       - name: Build release APK
-        run: flutter build apk --release --android-skip-build-dependency-validation
+        run: |
+          flutter build apk --release \
+            --android-skip-build-dependency-validation
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
