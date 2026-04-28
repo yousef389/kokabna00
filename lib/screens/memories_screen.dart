@@ -15,7 +15,7 @@ class MemoriesScreen extends StatelessWidget {
       title: const Text('ذكرى جديدة ✨'),
       content: TextField(
         controller: title,
-        textDirection: TextDirection.rtl,
+        textDirection: TextDirection.("rtl"),
         decoration: const InputDecoration(labelText: 'عنوان الذكرى'),
       ),
       actions: [
