@@ -25,33 +25,88 @@ jobs:
           channel: stable
           cache: true
 
+      # ══════════════════════════════════════════════
+      #  إصلاح 1 — local.properties
+      # ══════════════════════════════════════════════
       - name: Create local.properties
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
-          echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
+          echo "sdk.dir=$ANDROID_HOME"    >> android/local.properties
 
-      - name: Fix gradle-wrapper.jar (generate in clean temp dir)
+      # ══════════════════════════════════════════════
+      #  إصلاح 2 — gradle-wrapper.jar التالف
+      # ══════════════════════════════════════════════
+      - name: Fix gradle-wrapper.jar
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /tmp/
           mkdir -p /tmp/gradle-init
+          touch /tmp/gradle-init/settings.gradle
           cd /tmp/gradle-init
           /tmp/gradle-8.7/bin/gradle wrapper --gradle-version=8.7 --distribution-type=all
-          cp gradle/wrapper/gradle-wrapper.jar $GITHUB_WORKSPACE/android/gradle/wrapper/gradle-wrapper.jar
+          cp gradle/wrapper/gradle-wrapper.jar \
+             $GITHUB_WORKSPACE/android/gradle/wrapper/gradle-wrapper.jar
           chmod +x $GITHUB_WORKSPACE/android/gradlew
-          echo "✓ gradle-wrapper.jar size: $(wc -c < $GITHUB_WORKSPACE/android/gradle/wrapper/gradle-wrapper.jar) bytes"
+          echo "✓ jar: $(wc -c < $GITHUB_WORKSPACE/android/gradle/wrapper/gradle-wrapper.jar) bytes"
 
+      # ══════════════════════════════════════════════
+      #  إصلاح 3 — ترقية Gradle + AGP + Kotlin + SDK
+      # ══════════════════════════════════════════════
+      - name: Patch Android config files
+        run: |
+          # gradle-wrapper.properties → Gradle 8.7
+          echo 'distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-all.zip' \
+            > android/gradle/wrapper/gradle-wrapper.properties
+
+          # settings.gradle → AGP 8.6.0 + Kotlin 2.1.0
+          sed -i 's|id "com.android.application" version "[^"]*"|id "com.android.application" version "8.6.0"|' \
+            android/settings.gradle
+          sed -i 's|id "org.jetbrains.kotlin.android" version "[^"]*"|id "org.jetbrains.kotlin.android" version "2.1.0"|' \
+            android/settings.gradle
+
+          # app/build.gradle → compileSdk 36 + targetSdk 36 + ndkVersion
+          sed -i 's/compileSdk = [0-9]*/compileSdk = 36/' android/app/build.gradle
+          sed -i 's/targetSdk = [0-9]*/targetSdk = 36/'   android/app/build.gradle
+          grep -q "ndkVersion" android/app/build.gradle || \
+            sed -i '/compileSdk = 36/a\    ndkVersion = "28.2.13676358"' android/app/build.gradle
+
+          echo "=== settings.gradle plugins ==="
+          grep -E "com.android|kotlin.android" android/settings.gradle
+          echo "=== build.gradle SDK ==="
+          grep -E "compileSdk|targetSdk|ndkVersion" android/app/build.gradle
+
+      # ══════════════════════════════════════════════
+      #  إصلاح 4 — page_service.dart (regex مكسور)
+      # ══════════════════════════════════════════════
+      - name: Fix page_service.dart regex
+        run: |
+          python3 - << 'PYEOF'
+          path = 'lib/services/page_service.dart'
+          with open(path, 'r') as f:
+              lines = f.readlines()
+          for i, line in enumerate(lines):
+              if 'http-equiv' in line and 'replaceAll' in line:
+                  lines[i] = "        .replaceAll(RegExp(r'<meta[^>]+http-equiv=[\"\\']refresh[\"\\'][^>]*>', caseSensitive: false), '');\n"
+                  print(f"✓ Fixed line {i+1}")
+          with open(path, 'w') as f:
+              f.writelines(lines)
+          PYEOF
+
+      # ══════════════════════════════════════════════
+      #  التحقق من الملفات
+      # ══════════════════════════════════════════════
       - name: Verify google-services.json
         run: |
-          if [ -f "android/app/google-services.json" ]; then
-            echo "✓ google-services.json موجود"
-          else
-            echo "✗ google-services.json مفقود" && exit 1
-          fi
+          [ -f "android/app/google-services.json" ] \
+            && echo "✓ google-services.json موجود" \
+            || (echo "✗ google-services.json مفقود" && exit 1)
 
       - name: Install dependencies
         run: flutter pub get
 
+      # ══════════════════════════════════════════════
+      #  البناء
+      # ══════════════════════════════════════════════
       - name: Build release APK
         run: flutter build apk --release
 
